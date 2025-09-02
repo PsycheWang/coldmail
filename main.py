@@ -1,6 +1,8 @@
+# main.py
 import csv
 import ssl
-from send_email_function import send_email
+import smtplib
+from send_email_function import build_email_message
 from datetime import date
 from gui_config import get_email_config_gui
 
@@ -20,27 +22,32 @@ with open(csv_file, newline='', encoding='utf-8') as file:
     if 'first_cold_mail_date' not in fieldnames:
         fieldnames.append('first_cold_mail_date')
 
-for row in rows:
-    to_email = row['Email']
-    name = row['Contact Name']
-    subject = f"Hello {name}, Introducing Our Self-Ligating Brackets"
-    html_body = html_template.replace('{name}', name)
+# 👉 一次性登录
+with smtplib.SMTP_SSL(config["smtp_server"], config["smtp_port"], context=context) as smtp:
+    smtp.login(config["email"], config["password"])
 
-    send_email(
-        sender_email=config["email"],
-        sender_password=config["password"],
-        receiver_email=to_email,
-        smtp_server=config["smtp_server"],
-        smtp_port=config["smtp_port"],
-        subject=subject,
-        html_content=html_body,
-        attachment_path=config["attachment_path"],
-        context=context
-    )
+    for row in rows:
+        to_email = row['Email']
+        name = row['Contact Name']
+        subject = f"Self-Ligating Brackets - Zhejiang Protect"
+        html_body = html_template.replace('{name}', name)
 
-    if not row.get('first_cold_mail_date'):
-        row['first_cold_mail_date'] = date.today().isoformat()
+        # 这里用一个 helper 函数，只负责构建 msg
+        msg = build_email_message(
+            sender_email=config["email"],
+            receiver_email=to_email,
+            subject=subject,
+            html_content=html_body,
+            attachment_path=config["attachment_path"]
+        )
 
+        smtp.send_message(msg)
+        print(f"✔ Email sent to {to_email}")
+
+        if not row.get('Second'):
+            row['Second'] = date.today().isoformat()
+
+# 写回 CSV
 with open(csv_file, 'w', newline='', encoding='utf-8') as file:
     writer = csv.DictWriter(file, fieldnames=fieldnames)
     writer.writeheader()

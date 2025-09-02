@@ -1,7 +1,7 @@
-import smtplib
+# send_email_function.py
 from email.message import EmailMessage
 
-def send_email(sender_email, sender_password, receiver_email, smtp_server, smtp_port, subject, html_content, attachment_path, context):
+def build_email_message(sender_email, receiver_email, subject, html_content, attachment_path=None):
     msg = EmailMessage()
     msg['Subject'] = subject
     msg['From'] = sender_email
@@ -18,7 +18,4 @@ def send_email(sender_email, sender_password, receiver_email, smtp_server, smtp_
                 filename=attachment_path.split('/')[-1]
             )
 
-    with smtplib.SMTP_SSL(smtp_server, smtp_port, context=context) as smtp:
-        smtp.login(sender_email, sender_password)
-        smtp.send_message(msg)
-        print(f"✔ Email sent to {receiver_email}")
+    return msg
